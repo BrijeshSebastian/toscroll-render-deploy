@@ -486,8 +486,7 @@
             <option value="Completed" ${p.status === 'Completed' ? 'selected' : ''}>Completed</option>
           </select><br>
           <label for="edit-imagePath-${projectId}">Project Image (leave empty to keep current):</label><br>
-          ${p.imagePath ? `<img src="https://toscroll.onrender.com
-${p.imagePath}" alt="${p.title}" style="max-width:100px;" /><br>` : ''}
+          ${p.imagePath ? `<img src="${p.imagePath}" alt="${p.title}" style="max-width:100px;" /><br>` : ''}
           <input type="file" id="edit-imagePath-${projectId}" accept="image/*" /><br>
           <button onclick="saveProject('${projectId}')">Save</button>
         `;
