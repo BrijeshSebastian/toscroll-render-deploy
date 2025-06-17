@@ -4,6 +4,7 @@ const Project = require('../models/Project');
 const { verifyToken, requireRole } = require('../middlewares/authMiddleware');
 const multer = require('multer');
 const upload = multer({ dest: 'uploads/' }); 
+const upload = require('../Cloudinary/cloudinaryStorage');
 
 
 // Get projects for the logged-in user
@@ -23,7 +24,7 @@ router.get('/my-projects', verifyToken, async (req, res) => {
 // Create project for a user
 router.post('/:userId', verifyToken, requireRole('admin'), upload.single('image'), async (req, res) => {
   try {
-    const imagePath = req.file ? `/uploads/${req.file.filename}` : null;
+    const imagePath = req.file ? req.file.path : null;
     const projectData = {
       userId: req.params.userId,
       title: req.body.title,
@@ -43,6 +44,7 @@ router.post('/:userId', verifyToken, requireRole('admin'), upload.single('image'
     res.status(500).json({ error: err.message });
   }
 });
+
 
 
 // Get all projects for a user
@@ -74,8 +76,7 @@ router.get('/project/:projectId', verifyToken, requireRole('admin'), async (req,
 router.put('/update/:projectId', verifyToken, requireRole('admin'), upload.single('image'), async (req, res) => {
   try {
     const { title, status, date, duedate, domain, expirydate, amcexpirydate } = req.body;
-    const imagePath = req.file ? `/uploads/${req.file.filename}` : req.body.imagePath;
-
+    const imagePath = req.file ? req.file.path : req.body.imagePath;
     if (!title || !status || !date || !duedate || !domain) {
       return res.status(400).json({ error: 'All fields except image and expiry date are required.' });
     }
