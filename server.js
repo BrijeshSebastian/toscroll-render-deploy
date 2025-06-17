@@ -45,6 +45,17 @@ app.use('/api/messages', messageRoutes); // Ensure this line is present
 app.use('/api/projects', projectRoutes);
 app.use('/api/project-logs', projectLogRoutes);
 
+// Force Express to send JSON on unhandled errors
+app.use((err, req, res, next) => {
+  console.error('Unhandled error:', err);
+  res.status(err.status || 500).json({
+    error: {
+      message: err.message || 'Internal Server Error',
+    }
+  });
+});
+
+
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log('MongoDB connected'))
   .catch((err) => console.error('MongoDB connection error:', err));
