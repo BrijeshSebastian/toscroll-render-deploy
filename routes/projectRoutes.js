@@ -106,6 +106,40 @@ router.put('/project/:projectId', verifyToken, async (req, res) => {
 
 
 
+//Update Domain date
+router.put('/project/domain-renew/:projectId', verifyToken, async (req, res) => {
+  try {
+    const projectId = req.params.projectId;
+    const { months } = req.body;
+
+    if (!months || typeof months !== 'number') {
+      return res.status(400).json({ message: 'Invalid or missing "months" in request body' });
+    }
+
+    const project = await Project.findById(projectId).select('expirydate');
+    if (!project) {
+      return res.status(404).json({ message: 'Project not found' });
+    }
+
+    const oldDate = project.expirydate || new Date(); // fallback to current date if null
+    const newDate = dayjs(oldDate).add(months, 'month').toDate();
+
+    const updatedProject = await Project.findByIdAndUpdate(
+      projectId,
+      { expirydate: newDate },
+      { new: true }
+    );
+
+    res.json(updatedProject);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
+
+
 // Update a specific project
 router.put('/update/:projectId', verifyToken, requireRole('admin'), upload.single('image'), async (req, res) => {
   try {
