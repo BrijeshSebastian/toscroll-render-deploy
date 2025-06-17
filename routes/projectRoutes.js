@@ -2,8 +2,6 @@ const express = require('express');
 const router = express.Router();
 const Project = require('../models/Project');
 const { verifyToken, requireRole } = require('../middlewares/authMiddleware');
-const multer = require('multer');
-const upload = multer({ dest: 'uploads/' }); 
 const upload = require('../Cloudinary/cloudinaryStorage');
 
 
