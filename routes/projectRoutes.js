@@ -3,6 +3,8 @@ const router = express.Router();
 const Project = require('../models/Project');
 const { verifyToken, requireRole } = require('../middlewares/authMiddleware');
 const upload = require('../Cloudinary/cloudinaryStorage');
+const dayjs = require('dayjs');
+
 
 
 // Get projects for the logged-in user
@@ -69,6 +71,40 @@ router.get('/project/:projectId', verifyToken, requireRole('admin'), async (req,
     res.status(500).json({ error: err.message });
   }
 });
+
+
+//Update AMC date
+router.put('/project/:projectId', verifyToken, async (req, res) => {
+  try {
+    const projectId = req.params.projectId;
+    const { months } = req.body;
+
+    if (!months || typeof months !== 'number') {
+      return res.status(400).json({ message: 'Invalid or missing "months" in request body' });
+    }
+
+    const project = await Project.findById(projectId).select('amcexpirydate');
+    if (!project) {
+      return res.status(404).json({ message: 'Project not found' });
+    }
+
+    const oldDate = project.amcexpirydate || new Date(); // fallback to current date if null
+    const newDate = dayjs(oldDate).add(months, 'month').toDate();
+
+    const updatedProject = await Project.findByIdAndUpdate(
+      projectId,
+      { amcexpirydate: newDate },
+      { new: true }
+    );
+
+    res.json(updatedProject);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
 
 // Update a specific project
 router.put('/update/:projectId', verifyToken, requireRole('admin'), upload.single('image'), async (req, res) => {
