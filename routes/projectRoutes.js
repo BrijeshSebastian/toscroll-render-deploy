@@ -74,7 +74,7 @@ router.get('/project/:projectId', verifyToken, requireRole('admin'), async (req,
 
 
 //Update AMC date
-router.put('/project/:projectId', async (req, res) => {
+router.put('/project/:projectId', verifyToken, async (req, res) => {
   try {
     const projectId = req.params.projectId;
     const { months } = req.body;
