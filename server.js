@@ -10,6 +10,7 @@ const mongoose = require('mongoose');
 const authRoutes = require('./routes/authRoutes');
 const projectRoutes = require('./routes/projectRoutes');
 const projectLogRoutes = require('./routes/projectLogs');
+const { requestLogger, errorLogger } = require('./middlewares/loggerMiddleware');
 
 dotenv.config();
 
@@ -35,7 +36,7 @@ const io = new Server(server, {
 });
 
 const messageRoutes = require('./routes/messageRoutes')(io); // Pass io to messageRoutes
-
+app.use(requestLogger); // 🔁 Log all incoming requests
 app.use(express.json());
 app.use(express.static('public'));
 app.use('/toscroll-backend/public', express.static(path.join(__dirname, 'public')));
@@ -55,6 +56,7 @@ app.use((err, req, res, next) => {
   });
 });
 
+app.use(errorLogger); // 💥 Log all errors after routes
 
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log('MongoDB connected'))
