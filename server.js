@@ -11,6 +11,7 @@ const authRoutes = require('./routes/authRoutes');
 const projectRoutes = require('./routes/projectRoutes');
 const projectLogRoutes = require('./routes/projectLogs');
 const { requestLogger, errorLogger } = require('./middlewares/loggerMiddleware');
+const logRoutes = require('./routes/logRoutes');
 
 dotenv.config();
 
@@ -45,6 +46,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/messages', messageRoutes); // Ensure this line is present
 app.use('/api/projects', projectRoutes);
 app.use('/api/project-logs', projectLogRoutes);
+app.use('/api/logs', logRoutes);
 
 // Force Express to send JSON on unhandled errors
 app.use((err, req, res, next) => {
