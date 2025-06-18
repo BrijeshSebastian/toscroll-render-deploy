@@ -60,6 +60,15 @@ app.use((err, req, res, next) => {
 
 app.use(errorLogger); // 💥 Log all errors after routes
 
+app.use((err, req, res, next) => {
+  console.error('Unhandled error:', err);
+  res.status(err.status || 500).json({
+    error: {
+      message: err.message || 'Internal Server Error',
+    }
+  });
+});
+
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log('MongoDB connected'))
   .catch((err) => console.error('MongoDB connection error:', err));
