@@ -198,5 +198,12 @@ if (req.files?.companyImage) {
 });
 
 
+//Error checking 
+router.get('/test-db-error', async (req, res) => {
+  const user = await User.findById('invalid-object-id'); // Will cause a CastError
+  res.json(user);
+});
+
+
 
 module.exports = router;
