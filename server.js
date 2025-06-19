@@ -48,18 +48,10 @@ app.use('/api/projects', projectRoutes);
 app.use('/api/project-logs', projectLogRoutes);
 app.use('/api/logs', logRoutes);
 
-// Force Express to send JSON on unhandled errors
-app.use((err, req, res, next) => {
-  console.error('Unhandled error:', err);
-  res.status(err.status || 500).json({
-    error: {
-      message: err.message || 'Internal Server Error',
-    }
-  });
-});
 
 app.use(errorLogger); // 💥 Log all errors after routes
 
+// Force Express to send JSON on unhandled errors
 app.use((err, req, res, next) => {
   console.error('Unhandled error:', err);
   res.status(err.status || 500).json({
