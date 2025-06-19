@@ -25,4 +25,24 @@ router.get('/download', async (req, res) => {
   }
 });
 
+// DELETE /api/logs/clear?level=info
+router.delete('/clear', async (req, res) => {
+  try {
+    const { level } = req.query;
+
+    const query = level ? { level } : {};
+
+    const result = await ServerLog.deleteMany(query);
+
+    res.json({
+      message: `Logs ${level ? `with level '${level}' ` : ''}cleared successfully`,
+      deletedCount: result.deletedCount,
+    });
+  } catch (err) {
+    console.error('Error clearing logs:', err.message);
+    res.status(500).json({ error: 'Server error while clearing logs' });
+  }
+});
+
+
 module.exports = router;
