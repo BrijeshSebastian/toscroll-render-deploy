@@ -3,12 +3,15 @@ const messageRouter = express.Router();
 const Message = require('../models/Message');
 const User = require('../models/User');
 const uploadAudio = require('../Cloudinary/cloudinaryAudioStorage');
+const { verifyToken } = require('../middlewares/authMiddleware'); // ✅ FIXED
 
 const connectedUsers = new Map();
 
 module.exports = (io) => {
+  // Socket.IO setup
   io.on('connection', (socket) => {
     console.log('User connected:', socket.id);
+
     socket.on('registerUser', (userId) => {
       console.log(`Registering user ${userId} with socket ${socket.id}`);
       connectedUsers.set(userId, socket.id);
@@ -25,13 +28,16 @@ module.exports = (io) => {
     });
   });
 
+  // Send text message
   messageRouter.post('/send', async (req, res) => {
     console.log('POST /api/messages/send called with body:', req.body);
     const { senderId, receiverId, text } = req.body;
+
     try {
       if (!senderId || !receiverId || !text) {
         return res.status(400).json({ error: 'Missing required fields' });
       }
+
       const sender = await User.findById(senderId);
       const receiver = await User.findById(receiverId);
       if (!sender || !receiver) {
@@ -40,6 +46,7 @@ module.exports = (io) => {
 
       const message = new Message({
         text,
+        type: 'text',
         senderId,
         senderName: sender.name,
         receiverId,
@@ -50,6 +57,7 @@ module.exports = (io) => {
       const messageData = {
         _id: message._id,
         text: message.text,
+        type: message.type,
         senderId: message.senderId,
         senderName: message.senderName,
         receiverId: message.receiverId,
@@ -60,12 +68,8 @@ module.exports = (io) => {
 
       const senderSocket = connectedUsers.get(senderId);
       const receiverSocket = connectedUsers.get(receiverId);
-      if (senderSocket) {
-        io.to(senderSocket).emit('receiveMessage', messageData);
-      }
-      if (receiverSocket) {
-        io.to(receiverSocket).emit('receiveMessage', messageData);
-      }
+      if (senderSocket) io.to(senderSocket).emit('receiveMessage', messageData);
+      if (receiverSocket) io.to(receiverSocket).emit('receiveMessage', messageData);
 
       res.status(201).json(messageData);
     } catch (err) {
@@ -74,10 +78,12 @@ module.exports = (io) => {
     }
   });
 
-
   // Send voice message
   messageRouter.post('/send-voice', verifyToken, uploadAudio.single('voice'), async (req, res) => {
-    console.log('POST /api/messages/send-voice called');
+    console.log('✅ POST /api/messages/send-voice called');
+    console.log('Body:', req.body);
+    console.log('File:', req.file);
+
     const { senderId, receiverId, type } = req.body;
 
     try {
@@ -117,12 +123,8 @@ module.exports = (io) => {
 
       const senderSocket = connectedUsers.get(senderId);
       const receiverSocket = connectedUsers.get(receiverId);
-      if (senderSocket) {
-        io.to(senderSocket).emit('receiveMessage', messageData);
-      }
-      if (receiverSocket) {
-        io.to(receiverSocket).emit('receiveMessage', messageData);
-      }
+      if (senderSocket) io.to(senderSocket).emit('receiveMessage', messageData);
+      if (receiverSocket) io.to(receiverSocket).emit('receiveMessage', messageData);
 
       res.status(201).json(messageData);
     } catch (err) {
@@ -131,7 +133,7 @@ module.exports = (io) => {
     }
   });
 
-
+  // Get message history
   messageRouter.get('/history/:userId', async (req, res) => {
     console.log(`GET /api/messages/history/${req.params.userId} called`);
     try {
@@ -140,11 +142,9 @@ module.exports = (io) => {
         return res.status(400).json({ error: 'User ID required' });
       }
       const messages = await Message.find({
-        $or: [
-          { senderId: userId },
-          { receiverId: userId },
-        ],
+        $or: [{ senderId: userId }, { receiverId: userId }],
       }).sort({ timestamp: 1 });
+
       console.log(`Found ${messages.length} messages for userId: ${userId}`);
       res.json(messages);
     } catch (err) {
@@ -153,6 +153,7 @@ module.exports = (io) => {
     }
   });
 
+  // Mark all messages as read
   messageRouter.post('/mark-read/:userId', async (req, res) => {
     console.log(`POST /api/messages/mark-read/${req.params.userId} called`);
     try {
@@ -160,6 +161,7 @@ module.exports = (io) => {
       if (!userId) {
         return res.status(400).json({ error: 'User ID required' });
       }
+
       await Message.updateMany(
         { receiverId: userId, isRead: false },
         { isRead: true }
