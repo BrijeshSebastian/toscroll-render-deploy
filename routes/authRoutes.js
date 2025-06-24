@@ -87,18 +87,44 @@ router.get('/admin', verifyToken, async (req, res) => {
 
 // Delete user by ID (Admin only)
 router.delete('/delete-user/:id', verifyToken, requireRole('admin'), async (req, res) => {
+  const userId = req.params.id;
+
   try {
-    const user = await User.findByIdAndDelete(req.params.id);
+    const user = await User.findByIdAndDelete(userId);
     if (!user) return res.status(404).json({ message: 'User not found' });
 
-    // Optional: delete related projects if Project model exists
-    await Project.deleteMany({ user: req.params.id });
+    // 1. Delete user's projects
+    await Project.deleteMany({ user: userId });
 
-    res.json({ message: `${user.name} deleted successfully` });
+    // 2. Delete messages sent or received by the user
+    await Message.deleteMany({
+      $or: [{ senderId: userId }, { receiverId: userId }]
+    });
+
+    // 3. Delete other related models if they exist
+    // await Notification.deleteMany({ userId }); // Example
+    // await Comment.deleteMany({ userId }); // Example
+
+    // 4. Optionally delete Cloudinary images
+    const cloudinary = require('cloudinary').v2;
+    if (user.profileImage) {
+      const publicId = extractPublicId(user.profileImage);
+      await cloudinary.uploader.destroy(publicId);
+    }
+
+    if (user.companyImage) {
+      const publicId = extractPublicId(user.companyImage);
+      await cloudinary.uploader.destroy(publicId);
+    }
+
+    res.json({ message: `${user.name} and all related data deleted successfully` });
   } catch (err) {
+    console.error('Delete user error:', err);
     res.status(500).json({ error: err.message });
   }
 });
+
+
 
 // Get all users (Admin only)
 router.get('/all', verifyToken, requireRole('admin'), async (req, res) => {
