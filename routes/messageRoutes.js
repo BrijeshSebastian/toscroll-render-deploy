@@ -2,6 +2,7 @@ const express = require('express');
 const messageRouter = express.Router();
 const Message = require('../models/Message');
 const User = require('../models/User');
+const uploadAudio = require('../Cloudinary/cloudinaryAudioStorage');
 
 const connectedUsers = new Map();
 
@@ -72,6 +73,64 @@ module.exports = (io) => {
       res.status(500).json({ error: 'Server error' });
     }
   });
+
+
+  // Send voice message
+  messageRouter.post('/send-voice', verifyToken, uploadAudio.single('voice'), async (req, res) => {
+    console.log('POST /api/messages/send-voice called');
+    const { senderId, receiverId, type } = req.body;
+
+    try {
+      if (!senderId || !receiverId || !req.file || type !== 'audio') {
+        return res.status(400).json({ error: 'Missing required fields or audio file' });
+      }
+
+      const sender = await User.findById(senderId);
+      const receiver = await User.findById(receiverId);
+      if (!sender || !receiver) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      const audioUrl = req.file.path; // Cloudinary URL
+
+      const message = new Message({
+        audioUrl,
+        type: 'audio',
+        senderId,
+        senderName: sender.name,
+        receiverId,
+        receiverName: receiver.name,
+      });
+      await message.save();
+
+      const messageData = {
+        _id: message._id,
+        audioUrl: message.audioUrl,
+        type: message.type,
+        senderId: message.senderId,
+        senderName: message.senderName,
+        receiverId: message.receiverId,
+        receiverName: message.receiverName,
+        timestamp: message.timestamp,
+        isRead: message.isRead,
+      };
+
+      const senderSocket = connectedUsers.get(senderId);
+      const receiverSocket = connectedUsers.get(receiverId);
+      if (senderSocket) {
+        io.to(senderSocket).emit('receiveMessage', messageData);
+      }
+      if (receiverSocket) {
+        io.to(receiverSocket).emit('receiveMessage', messageData);
+      }
+
+      res.status(201).json(messageData);
+    } catch (err) {
+      console.error('Error sending voice message:', err);
+      res.status(500).json({ error: 'Server error' });
+    }
+  });
+
 
   messageRouter.get('/history/:userId', async (req, res) => {
     console.log(`GET /api/messages/history/${req.params.userId} called`);

@@ -1,7 +1,9 @@
 const mongoose = require('mongoose');
 
 const messageSchema = new mongoose.Schema({
-  text: { type: String, required: true },
+  text: { type: String }, // Optional for audio messages
+  audioUrl: { type: String }, // Store Cloudinary audio URL
+  type: { type: String, required: true, enum: ['text', 'audio'] }, // Message type
   senderId: { type: String, required: true },
   senderName: { type: String, required: true },
   receiverId: { type: String, required: true },
