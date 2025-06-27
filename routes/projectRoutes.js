@@ -45,6 +45,16 @@ router.post('/:userId', verifyToken, requireRole('admin'), upload.single('image'
   }
 });
 
+// Get all projects
+router.get('/user/projects',  async (req, res) => {
+  try {
+    const projects = await Project.find();
+    res.json(projects);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 
 
 // Get all projects for a user
