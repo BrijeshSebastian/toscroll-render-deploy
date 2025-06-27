@@ -3,6 +3,7 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const User = require('../models/Project');
 const { verifyToken, requireRole } = require('../middlewares/authMiddleware');
 const upload = require('../Cloudinary/cloudinaryStorage');
 
