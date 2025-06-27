@@ -4,6 +4,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const Project = require('../models/Project');
+const Message = require('../models/Message');
 const { verifyToken, requireRole } = require('../middlewares/authMiddleware');
 const upload = require('../Cloudinary/cloudinaryStorage');
 
