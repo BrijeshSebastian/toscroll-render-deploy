@@ -226,6 +226,76 @@ if (req.files?.companyImage) {
 });
 
 
+
+// Bulk Register
+router.post('/register-bulk', async (req, res) => {
+  const usersList = req.body.users; // expecting { users: [ {...}, {...}, ... ] }
+
+  if (!Array.isArray(usersList)) {
+    return res.status(400).json({ message: 'users field must be an array' });
+  }
+
+  try {
+    const createdUsers = [];
+    const failedUsers = [];
+
+    for (const userData of usersList) {
+      const { name, email, password } = userData;
+
+      // Basic validation
+      if (!name || !email || !password) {
+        failedUsers.push({
+          email: email || null,
+          reason: 'Missing required fields'
+        });
+        continue;
+      }
+
+      // Check if email already exists
+      const existingUser = await User.findOne({ email });
+      if (existingUser) {
+        failedUsers.push({
+          email,
+          reason: 'Email already registered'
+        });
+        continue;
+      }
+
+      // Hash password
+      const hashedPassword = await bcrypt.hash(password, 10);
+
+      const newUser = new User({
+        name,
+        email,
+        password: hashedPassword,
+        role: 'user',
+        approved: false // or true if you want them active immediately
+      });
+
+      await newUser.save();
+
+      createdUsers.push({
+        id: newUser._id,
+        name: newUser.name,
+        email: newUser.email
+      });
+    }
+
+    res.status(201).json({
+      message: 'Bulk registration complete',
+      createdUsers,
+      failedUsers
+    });
+
+  } catch (err) {
+    console.error('Bulk register error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
+
+
 //Error checking 
 router.get('/test-db-error', async (req, res) => {
   const user = await User.findById('invalid-object-id'); // Will cause a CastError
